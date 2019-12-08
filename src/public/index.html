@@ -1,0 +1,97 @@
+<!-- ./client/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <link type="text/css" href="/css/styles.css" rel="stylesheet" />
+    <meta name="theme-color" content="#377771" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Remote control</title>
+  </head>
+  <body>
+    <div class="header">
+      <span id="pulse"></span><span id="status"> Disconnected</span>
+      <span id="info"></span>
+    </div>
+    <div class="box box-next">
+      <div class="btn" id="next-button">
+        <img src="icons/play.png" class="icon next" />
+      </div>
+    </div>
+    <div id="iterate-button">
+      <img src="icons/iterate.png" class="iterate-icon" />
+    </div>
+    <div class="box box-back">
+      <div class="btn" id="back-button">
+        <img src="icons/play.png" class="icon back" />
+      </div>
+    </div>
+    <footer>
+      <div id="value">0</div>
+      <input id="range" type="range" min="0" max="13" step="1" value="0" />
+    </footer>
+  </body>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+  <script>
+    const socket = io("http://{ip}:3002");
+    const backButton = document.getElementById("back-button");
+    const nextButton = document.getElementById("next-button");
+    const iterateButton = document.getElementById("iterate-button");
+    const range = document.getElementById("range");
+    const value = document.getElementById("value");
+    const status = document.getElementById("status");
+    const pulse = document.getElementById("pulse");
+    const info = document.getElementById("info");
+    backButton.onclick = () => {
+      socket.emit("command", { command: "back" });
+    };
+    nextButton.onclick = () => {
+      socket.emit("command", { command: "next" });
+    };
+    iterateButton.onclick = () => {
+      socket.emit("iterate");
+    };
+    socket.on("connect", () => {
+      status.innerHTML = "Connected";
+      status.classList.remove("disconnected");
+      status.classList.add("connected");
+      pulse.classList.remove("disconnected");
+      pulse.classList.add("connected");
+    });
+    socket.on("reconnecting", () => {
+      status.innerHTML = "Reconnecting...";
+      status.classList.add("disconnected");
+      status.classList.remove("connected");
+      pulse.classList.add("disconnected");
+      pulse.classList.remove("connected");
+    });
+    socket.on("connect_error", err => {
+      status.innerHTML = `Error: ${err}`;
+      status.classList.add("disconnected");
+      status.classList.remove("connected");
+      pulse.classList.add("disconnected");
+      pulse.classList.remove("connected");
+    });
+    socket.on("count", count => {
+      range.max = count;
+    });
+    socket.on("update", ({ slide, index }) => {
+      range.value = index;
+      info.innerHTML = slide;
+      value.innerHTML = index;
+    });
+    const onRangeChange = () => {
+      value.innerHTML = range.value;
+      socket.emit("shortcut", { index: range.value });
+    };
+    range.addEventListener("input", onRangeChange);
+  </script>
+</html>
